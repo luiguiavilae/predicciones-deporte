@@ -11,3 +11,13 @@ data/raw/
 
 # OS
 .DS_Store
+# Python
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Data artifacts (si no quieres versionarlos)
+# data/raw/
+# data/processed/
+# data/meta/

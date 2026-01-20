@@ -69,6 +69,8 @@ def main():
     print(f"1X2: Local {pct(probs['p_home'])} | Empate {pct(probs['p_draw'])} | Visita {pct(probs['p_away'])}")
     print(f"Over/Under 2.5: Over {pct(probs['p_over25'])} | Under {pct(probs['p_under25'])}")
     print(f"BTTS: Sí {pct(probs['p_btts'])} | No {pct(1-probs['p_btts'])}")
-
+def predict_match(league: str, home: str, away: str):
+    # aquí llama a la misma lógica que usa el CLI
+    return run_prediction(league, home, away)  # o como se llame tu función interna
 if __name__ == "__main__":
     main()
