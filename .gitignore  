@@ -1,0 +1,14 @@
+# --- Python / venv ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- Mac ---
+.DS_Store
+
+# --- Datos crudos (se regeneran) ---
+data/raw/
+
