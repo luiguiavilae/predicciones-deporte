@@ -1,0 +1,20 @@
+project:
+  name: tennis-elo-atp
+  seed: 42
+
+data:
+  atp_matches_base_url: "https://raw.githubusercontent.com/JeffSackmann/tennis_atp/master/"
+  seasons: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+
+elo:
+  k_factor: 32
+  initial_rating: 1500
+  surface_weight: true
+
+train:
+  model_out: "models/elo_model.pkl"
+
+predict:
+  default_surface: "Hard"
