@@ -9,9 +9,15 @@ data:
   processed_dir: "data/processed"
 
 elo:
-  k_factor: 32
+  k_factor: 24
   initial_rating: 1500
   surface_weight: true
+  global_weight: 0.5
+  surface_rating_weight: 0.5
+
+  # A mayor scale, probabilidades menos extremas
+  # 400 es estándar Elo (ajedrez). Tenis suele requerir más suavizado.
+  scale: 700
 
 train:
   model_out: "models/elo_model.pkl"
