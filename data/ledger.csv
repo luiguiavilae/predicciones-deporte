@@ -1,4 +1,0 @@
-date,league,home,away,market,pick,odds,lambda_home,lambda_away,p_home,p_draw,p_away,p_over,p_under,p_btts_yes,p_btts_no,actual_home_goals,actual_away_goals
-2026-01-24,EPL,Manchester City,Wolverhampton Wanderers,1X2,1,1.70,1.21,1.00,0.408,0.289,0.304,,,,,2,0
-2026-01-24,EPL,Manchester City,Wolverhampton Wanderers,OU25,UNDER,1.78,1.21,1.00,,,,0.379,0.621,,,2,0
-2026-01-24,EPL,Manchester City,Wolverhampton Wanderers,BTTS,NO,1.78,1.21,1.00,,,,,,0.443,0.557,2,0
