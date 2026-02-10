@@ -123,7 +123,7 @@ def confidence_score(
     else:
         coh = 0.0
 
-    score = (0.5 * prob_max) + (0.3 * diff) + (0.2 * coh)
+    score = (0.50 * prob_max) + (0.20 * diff) + (0.30 * coh)
     # clamp
     if score < 0:
         score = 0.0

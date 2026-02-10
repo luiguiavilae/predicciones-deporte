@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import numpy as np
 from math import exp, factorial
@@ -64,8 +65,21 @@ def run_prediction(league: str, home_team: str, away_team: str):
     home_adv = float(model["home_adv"])
     atk = model["attack"]
     dfn = model["defense"]
+    known_teams = set(model.get("teams", list(atk.keys())))
 
-    # Si un equipo no existe en el modelo, cae a 0.0 (neutral) para no reventar
+    unknown = []
+    if home_team not in known_teams:
+        unknown.append(home_team)
+    if away_team not in known_teams:
+        unknown.append(away_team)
+    if unknown:
+        print(
+            f"WARN: equipo(s) no encontrado(s) en modelo {league}: {unknown}. "
+            f"Se usarán parámetros neutros (0.0). "
+            f"Equipos disponibles: {sorted(known_teams)}",
+            file=sys.stderr,
+        )
+
     a_h = float(atk.get(home_team, 0.0))
     d_h = float(dfn.get(home_team, 0.0))
     a_a = float(atk.get(away_team, 0.0))

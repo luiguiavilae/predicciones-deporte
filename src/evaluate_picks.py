@@ -2,6 +2,8 @@ import argparse
 import pandas as pd
 from pathlib import Path
 
+from src.scoring import confidence_score
+
 
 # -----------------------------
 # Normalización
@@ -49,99 +51,37 @@ def normalize_pick(market: str, pick: str) -> str:
 
 # -----------------------------
 # Confidence Score (0..100)
+# Delegado a src.scoring (fuente única)
 # -----------------------------
 
-def top2(values):
-    probs = sorted([float(x) for x in values if x is not None], reverse=True)
-    best = probs[0] if len(probs) >= 1 else 0.0
-    second = probs[1] if len(probs) >= 2 else 0.0
-    return best, second
-
-
-def coherence_1x2(pick, lam_h, lam_a):
-    diff = lam_h - lam_a
-    if pick == "1":
-        if diff >= 0.20: return 100.0
-        if diff >= 0.05: return 50.0
-        return 0.0
-    if pick == "2":
-        if diff <= -0.20: return 100.0
-        if diff <= -0.05: return 50.0
-        return 0.0
-    # X
-    if abs(diff) <= 0.10: return 100.0
-    if abs(diff) <= 0.20: return 50.0
-    return 0.0
-
-
-def coherence_ou25(pick, lam_total):
-    if pick == "OVER":
-        if lam_total >= 2.7: return 100.0
-        if lam_total >= 2.5: return 50.0
-        return 0.0
-    if pick == "UNDER":
-        if lam_total <= 2.3: return 100.0
-        if lam_total <= 2.5: return 50.0
-        return 0.0
-    return 0.0
-
-
-def coherence_btts(pick, lam_h, lam_a):
-    if pick == "YES":
-        if lam_h >= 0.95 and lam_a >= 0.95: return 100.0
-        if lam_h >= 0.75 and lam_a >= 0.75: return 50.0
-        return 0.0
-    if pick == "NO":
-        if lam_h <= 0.70 or lam_a <= 0.70: return 100.0
-        if lam_h <= 0.85 or lam_a <= 0.85: return 50.0
-        return 0.0
-    return 0.0
+# Mapeo de picks: evaluate usa "1"/"X"/"2", scoring usa "H"/"D"/"A"
+_PICK_TO_SCORING = {"1": "H", "X": "D", "2": "A"}
 
 
 def compute_confidence(market, pick, row):
-    """
-    Score 0..100
-
-    PESOS (ajustados para Poisson):
-      - prob_max: 50%
-      - diferencial: 20%
-      - coherencia con lambdas: 30%
-    """
     lam_h = float(row.get("lambda_home", 0.0) or 0.0)
     lam_a = float(row.get("lambda_away", 0.0) or 0.0)
-    lam_total = lam_h + lam_a
 
     if market == "1X2":
         ph = float(row.get("p_home", 0.0) or 0.0)
         pd_ = float(row.get("p_draw", 0.0) or 0.0)
         pa = float(row.get("p_away", 0.0) or 0.0)
-        best, second = top2([ph, pd_, pa])
-        coh = coherence_1x2(pick, lam_h, lam_a)
-
+        dist = {"H": ph, "D": pd_, "A": pa}
+        scoring_pick = _PICK_TO_SCORING.get(pick, pick)
     elif market == "OU25":
         pov = float(row.get("p_over", 0.0) or 0.0)
         pun = float(row.get("p_under", 0.0) or 0.0)
-        best, second = top2([pov, pun])
-        coh = coherence_ou25(pick, lam_total)
-
+        dist = {"Over": pov, "Under": pun}
+        scoring_pick = "Over" if pick == "OVER" else "Under"
     elif market == "BTTS":
         pys = float(row.get("p_btts_yes", 0.0) or 0.0)
         pno = float(row.get("p_btts_no", 0.0) or 0.0)
-        best, second = top2([pys, pno])
-        coh = coherence_btts(pick, lam_h, lam_a)
-
+        dist = {"Yes": pys, "No": pno}
+        scoring_pick = "Yes" if pick == "YES" else "No"
     else:
-        best, second, coh = 0.0, 0.0, 0.0
+        return 0.0
 
-    prob_max = best * 100.0
-    diff = (best - second) * 100.0
-
-    # NUEVOS PESOS
-    score = (0.50 * prob_max) + (0.20 * diff) + (0.30 * coh)
-
-    if score < 0: score = 0.0
-    if score > 100: score = 100.0
-    return float(score)
+    return confidence_score(market, scoring_pick, dist, lam_h, lam_a)
 
 
 # -----------------------------
