@@ -42,11 +42,22 @@ def main():
     snapshot = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
     all_rows = []
+    failures = []
 
     for lg in LEAGUES:
+        print(f"\n=== League {lg.code} (fd_code={lg.fd_code}) ===")
         for sc in lg.seasons:
             url = f"{FOOTBALL_DATA_BASE}/{sc}/{lg.fd_code}.csv"
-            df = fetch_csv(url)
+            print(f"Fetching: {url}")
+
+            try:
+                df = fetch_csv(url)
+            except Exception as e:
+                failures.append({"league": lg.code, "season_code": sc, "url": url, "error": str(e)})
+                print(f"  !! FAIL: {lg.code} {sc} -> {e}")
+                continue
+
+            print(f"  OK: rows={df.shape[0]} cols={df.shape[1]}")
 
             raw_path = os.path.join(RAW_DIR, f"{lg.code}_{sc}.csv")
             df.to_csv(raw_path, index=False)
@@ -119,17 +130,27 @@ def main():
 
             all_rows.append(out)
 
+    if not all_rows:
+        print("ERROR: No se pudo descargar ninguna liga/temporada. Revisa failures.")
+        if failures:
+            print("Failures:")
+            for f in failures:
+                print(f)
+        raise SystemExit(1)
+
     match_level = pd.concat(all_rows, ignore_index=True)
     match_level = match_level.drop_duplicates(subset=["match_id"], keep="last")
 
     out_path = os.path.join(PROCESSED_DIR, "match_level.csv")
     match_level.to_csv(out_path, index=False)
 
-    meta = {"last_update_utc": snapshot, "rows": int(match_level.shape[0])}
+    meta = {"last_update_utc": snapshot, "rows": int(match_level.shape[0]), "failures": failures}
     with open(os.path.join(META_DIR, "update_meta.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 
-    print(f"OK: wrote {out_path} with {match_level.shape[0]} rows. snapshot={snapshot}")
+    print(f"\nOK: wrote {out_path} with {match_level.shape[0]} rows. snapshot={snapshot}")
+    if failures:
+        print(f"WARNING: hubo {len(failures)} fallos. Revisa data/meta/update_meta.json")
 
 if __name__ == "__main__":
     main()

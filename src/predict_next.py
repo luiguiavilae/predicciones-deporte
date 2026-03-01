@@ -3,44 +3,19 @@ import json
 from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
-from math import exp, factorial
+
+from src.predict_match import poisson_pmf, outcome_probs
 
 PROCESSED_DIR = "data/processed"
 META_DIR = "data/meta"
 
-def poisson_pmf(k, lam):
-    return (lam ** k) * exp(-lam) / factorial(k)
-
-def outcome_probs(lam_h, lam_a, max_goals=10):
-    ph = np.zeros((max_goals + 1, max_goals + 1))
-    pH = [poisson_pmf(i, lam_h) for i in range(max_goals + 1)]
-    pA = [poisson_pmf(j, lam_a) for j in range(max_goals + 1)]
-    for i in range(max_goals + 1):
-        for j in range(max_goals + 1):
-            ph[i, j] = pH[i] * pA[j]
-
-    p_home = float(np.sum(np.tril(ph, -1)))
-    p_draw = float(np.sum(np.diag(ph)))
-    p_away = float(np.sum(np.triu(ph, 1)))
-
-    p_over25 = float(np.sum([ph[i, j] for i in range(max_goals + 1) for j in range(max_goals + 1) if (i + j) >= 3]))
-    p_under25 = 1.0 - p_over25
-    p_btts = float(np.sum([ph[i, j] for i in range(1, max_goals + 1) for j in range(1, max_goals + 1)]))
-
-    return {
-        "p_home": p_home,
-        "p_draw": p_draw,
-        "p_away": p_away,
-        "p_over25": p_over25,
-        "p_under25": p_under25,
-        "p_btts": p_btts,
-    }
 
 def load_model(league: str):
     path = os.path.join(META_DIR, f"model_{league}.json")
     if not os.path.exists(path):
         raise FileNotFoundError(f"No existe {path}. Ejecuta: python -m src.train_model")
-    return json.loads(open(path, "r", encoding="utf-8").read())
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 def predict_row(model, league, season, match_id, match_date, home_team, away_team):
     home_adv = model["home_adv"]
@@ -69,7 +44,12 @@ def predict_row(model, league, season, match_id, match_date, home_team, away_tea
         "away_team": away_team,
         "lambda_home": lam_h,
         "lambda_away": lam_a,
-        **probs
+        "p_home": probs["p_home"],
+        "p_draw": probs["p_draw"],
+        "p_away": probs["p_away"],
+        "p_over25": probs["p_over25"],
+        "p_under25": probs["p_under25"],
+        "p_btts": probs["p_btts_yes"],
     }
 
 def main():
